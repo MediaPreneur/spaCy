@@ -37,7 +37,8 @@ def download_cli(
 
 def download(model: str, direct: bool = False, sdist: bool = False, *pip_args) -> None:
     if (
-        not (is_package("spacy") or is_package("spacy-nightly"))
+        not is_package("spacy")
+        and not is_package("spacy-nightly")
         and "--no-deps" not in pip_args
     ):
         msg.warn(
@@ -55,7 +56,6 @@ def download(model: str, direct: bool = False, sdist: bool = False, *pip_args) -
         components = model.split("-")
         model_name = "".join(components[:-1])
         version = components[-1]
-        download_model(dl_tpl.format(m=model_name, v=version, s=suffix), pip_args)
     else:
         model_name = model
         if model in OLD_MODEL_SHORTCUTS:
@@ -66,7 +66,7 @@ def download(model: str, direct: bool = False, sdist: bool = False, *pip_args) -
             model_name = OLD_MODEL_SHORTCUTS[model]
         compatibility = get_compatibility()
         version = get_version(model_name, compatibility)
-        download_model(dl_tpl.format(m=model_name, v=version, s=suffix), pip_args)
+    download_model(dl_tpl.format(m=model_name, v=version, s=suffix), pip_args)
     msg.good(
         "Download and installation successful",
         f"You can now load the package via spacy.load('{model_name}')",
@@ -104,7 +104,7 @@ def get_version(model: str, comp: dict) -> str:
 def download_model(
     filename: str, user_pip_args: Optional[Sequence[str]] = None
 ) -> None:
-    download_url = about.__download_url__ + "/" + filename
+    download_url = f"{about.__download_url__}/{filename}"
     pip_args = list(user_pip_args) if user_pip_args is not None else []
     cmd = [sys.executable, "-m", "pip", "install"] + pip_args + [download_url]
     run_command(cmd)

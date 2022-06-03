@@ -88,7 +88,7 @@ def project_run(
             if not (project_dir / dep).exists():
                 err = f"Missing dependency specified by command '{subcommand}': {dep}"
                 err_help = "Maybe you forgot to run the 'project assets' command or a previous step?"
-                err_kwargs = {"exits": 1} if not dry else {}
+                err_kwargs = {} if dry else {"exits": 1}
                 msg.fail(err, err_help, **err_kwargs)
         check_spacy_commit = check_bool_env_var(ENV_VARS.PROJECT_USE_GIT_VERSION)
         with working_dir(project_dir) as current_dir:
@@ -119,8 +119,7 @@ def print_run_help(project_dir: Path, subcommand: Optional[str] = None) -> None:
         validate_subcommand(list(commands.keys()), list(workflows.keys()), subcommand)
         print(f"Usage: {COMMAND} project run {subcommand} {project_loc}")
         if subcommand in commands:
-            help_text = commands[subcommand].get("help")
-            if help_text:
+            if help_text := commands[subcommand].get("help"):
                 print(f"\n{help_text}\n")
         elif subcommand in workflows:
             steps = workflows[subcommand]
@@ -134,8 +133,7 @@ def print_run_help(project_dir: Path, subcommand: Optional[str] = None) -> None:
             print(f"For command details, run: {help_cmd}")
     else:
         print("")
-        title = config.get("title")
-        if title:
+        if title := config.get("title"):
             print(f"{locale_escape(title)}\n")
         if config_commands:
             print(f"Available commands in {PROJECT_FILE}")

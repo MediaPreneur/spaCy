@@ -24,17 +24,11 @@ _tlds = set(
 
 
 def is_punct(text: str) -> bool:
-    for char in text:
-        if not unicodedata.category(char).startswith("P"):
-            return False
-    return True
+    return all(unicodedata.category(char).startswith("P") for char in text)
 
 
 def is_ascii(text: str) -> bool:
-    for char in text:
-        if ord(char) >= 128:
-            return False
-    return True
+    return all(ord(char) < 128 for char in text)
 
 
 def like_num(text: str) -> bool:
@@ -76,11 +70,7 @@ def is_right_punct(text: str) -> bool:
 
 
 def is_currency(text: str) -> bool:
-    # can be overwritten by lang with list of currency words, e.g. dollar, euro
-    for char in text:
-        if unicodedata.category(char) != "Sc":
-            return False
-    return True
+    return all(unicodedata.category(char) == "Sc" for char in text)
 
 
 def like_email(text: str) -> bool:
@@ -124,10 +114,7 @@ def word_shape(text: str) -> str:
     seq = 0
     for char in text:
         if char.isalpha():
-            if char.isupper():
-                shape_char = "X"
-            else:
-                shape_char = "x"
+            shape_char = "X" if char.isupper() else "x"
         elif char.isdigit():
             shape_char = "d"
         else:

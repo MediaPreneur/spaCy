@@ -10,7 +10,7 @@ def noun_chunks(doclike: Union[Doc, Span]) -> Iterator[Tuple[int, int, int]]:
 
     def get_left_bound(doc, root):
         left_bound = root
-        for tok in reversed(list(root.lefts)):
+        for tok in reversed(list(left_bound.lefts)):
             if tok.dep in np_left_deps:
                 left_bound = tok
         return left_bound

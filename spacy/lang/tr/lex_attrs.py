@@ -80,9 +80,10 @@ def like_num(text):
     # Check ordinal number
     if text_lower in _ordinal_words:
         return True
-    if text_lower.endswith(_ordinal_endings):
-        if text_lower[:-3].isdigit() or text_lower[:-4].isdigit():
-            return True
+    if text_lower.endswith(_ordinal_endings) and (
+        text_lower[:-3].isdigit() or text_lower[:-4].isdigit()
+    ):
+        return True
     return False
 
 

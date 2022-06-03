@@ -26,17 +26,18 @@ def load_lookups(lang: str, tables: List[str], strict: bool = True) -> "Lookups"
     # TODO: import spacy_lookups_data instead of going via entry points here?
     lookups = Lookups()
     if lang not in registry.lookups:
-        if strict and len(tables) > 0:
+        if strict and tables:
             raise ValueError(Errors.E955.format(table=", ".join(tables), lang=lang))
-        return lookups
+        else:
+            return lookups
     data = registry.lookups.get(lang)
     for table in tables:
-        if table not in data:
-            if strict:
-                raise ValueError(Errors.E955.format(table=table, lang=lang))
-            language_data = {}  # type: ignore[var-annotated]
-        else:
+        if table in data:
             language_data = load_language_data(data[table])  # type: ignore[assignment]
+        elif strict:
+            raise ValueError(Errors.E955.format(table=table, lang=lang))
+        else:
+            language_data = {}  # type: ignore[var-annotated]
         lookups.add_table(table, language_data)
     return lookups
 

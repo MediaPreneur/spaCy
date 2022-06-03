@@ -50,12 +50,12 @@ def render(
         raise ValueError(Errors.E087.format(style=style))
     if isinstance(docs, (Doc, Span, dict)):
         docs = [docs]
-    docs = [obj if not isinstance(obj, Span) else obj.as_doc() for obj in docs]
+    docs = [obj.as_doc() if isinstance(obj, Span) else obj for obj in docs]
     if not all(isinstance(obj, (Doc, Span, dict)) for obj in docs):
         raise ValueError(Errors.E096)
     renderer_func, converter = factories[style]
     renderer = renderer_func(options=options)
-    parsed = [converter(doc, options) for doc in docs] if not manual else docs  # type: ignore
+    parsed = docs if manual else [converter(doc, options) for doc in docs]
     if manual:
         for doc in docs:
             if isinstance(doc, dict) and "ents" in doc:
@@ -69,7 +69,7 @@ def render(
         # See #4840 for details on span wrapper to disable mathjax
         from IPython.core.display import display, HTML
 
-        return display(HTML('<span class="tex2jax_ignore">{}</span>'.format(html)))
+        return display(HTML(f'<span class="tex2jax_ignore">{html}</span>'))
     return html
 
 
@@ -190,17 +190,20 @@ def parse_ents(doc: Doc, options: Dict[str, Any] = {}) -> Dict[str, Any]:
     options (Dict[str, Any]): NER-specific visualisation options.
     RETURNS (dict): Generated entities keyed by text (original text) and ents.
     """
-    kb_url_template = options.get("kb_url_template", None)
+    kb_url_template = options.get("kb_url_template")
     ents = [
         {
             "start": ent.start_char,
             "end": ent.end_char,
             "label": ent.label_,
-            "kb_id": ent.kb_id_ if ent.kb_id_ else "",
-            "kb_url": kb_url_template.format(ent.kb_id_) if kb_url_template else "#",
+            "kb_id": ent.kb_id_ or "",
+            "kb_url": kb_url_template.format(ent.kb_id_)
+            if kb_url_template
+            else "#",
         }
         for ent in doc.ents
     ]
+
     if not ents:
         warnings.warn(Warnings.W006)
     title = doc.user_data.get("title", None) if hasattr(doc, "user_data") else None
@@ -215,7 +218,7 @@ def parse_spans(doc: Doc, options: Dict[str, Any] = {}) -> Dict[str, Any]:
     options (Dict[str, any]): Span-specific visualisation options.
     RETURNS (dict): Generated span types keyed by text (original text) and spans.
     """
-    kb_url_template = options.get("kb_url_template", None)
+    kb_url_template = options.get("kb_url_template")
     spans_key = options.get("spans_key", "sc")
     spans = [
         {
@@ -224,11 +227,14 @@ def parse_spans(doc: Doc, options: Dict[str, Any] = {}) -> Dict[str, Any]:
             "start_token": span.start,
             "end_token": span.end,
             "label": span.label_,
-            "kb_id": span.kb_id_ if span.kb_id_ else "",
-            "kb_url": kb_url_template.format(span.kb_id_) if kb_url_template else "#",
+            "kb_id": span.kb_id_ or "",
+            "kb_url": kb_url_template.format(span.kb_id_)
+            if kb_url_template
+            else "#",
         }
         for span in doc.spans[spans_key]
     ]
+
     tokens = [token.text for token in doc]
 
     if not spans:

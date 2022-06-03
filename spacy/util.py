@@ -113,10 +113,12 @@ class registry(thinc.registry):
     @classmethod
     def get_registry_names(cls) -> List[str]:
         """List all available registries."""
-        names = []
-        for name, value in inspect.getmembers(cls):
-            if not name.startswith("_") and isinstance(value, Registry):
-                names.append(name)
+        names = [
+            name
+            for name, value in inspect.getmembers(cls)
+            if not name.startswith("_") and isinstance(value, Registry)
+        ]
+
         return sorted(names)
 
     @classmethod
@@ -308,11 +310,7 @@ def find_matching_language(lang: str) -> Optional[str]:
     # is labeled that way is probably trying to be distinct from 'zh' and
     # shouldn't automatically match.
     match = langcodes.closest_supported_match(lang, possible_languages, max_distance=9)
-    if match == "mul":
-        # Convert 'mul' back to spaCy's 'xx'
-        return "xx"
-    else:
-        return match
+    return "xx" if match == "mul" else match
 
 
 def get_lang_class(lang: str) -> Type["Language"]:
@@ -321,28 +319,25 @@ def get_lang_class(lang: str) -> Type["Language"]:
     lang (str): IETF language code, such as 'en'.
     RETURNS (Language): Language class.
     """
-    # Check if language is registered / entry point is available
     if lang in registry.languages:
         return registry.languages.get(lang)
-    else:
         # Find the language in the spacy.lang subpackage
+    try:
+        module = importlib.import_module(f".lang.{lang}", "spacy")
+    except ImportError as err:
+        # Find a matching language. For example, if the language 'no' is
+        # requested, we can use language-matching to load `spacy.lang.nb`.
         try:
-            module = importlib.import_module(f".lang.{lang}", "spacy")
-        except ImportError as err:
-            # Find a matching language. For example, if the language 'no' is
-            # requested, we can use language-matching to load `spacy.lang.nb`.
-            try:
-                match = find_matching_language(lang)
-            except langcodes.tag_parser.LanguageTagError:
-                # proceed to raising an import error
-                match = None
+            match = find_matching_language(lang)
+        except langcodes.tag_parser.LanguageTagError:
+            # proceed to raising an import error
+            match = None
 
-            if match:
-                lang = match
-                module = importlib.import_module(f".lang.{lang}", "spacy")
-            else:
-                raise ImportError(Errors.E048.format(lang=lang, err=err)) from err
-        set_lang_class(lang, getattr(module, module.__all__[0]))  # type: ignore[attr-defined]
+        if not match:
+            raise ImportError(Errors.E048.format(lang=lang, err=err)) from err
+        lang = match
+        module = importlib.import_module(f".lang.{lang}", "spacy")
+    set_lang_class(lang, getattr(module, module.__all__[0]))  # type: ignore[attr-defined]
     return registry.languages.get(lang)
 
 
@@ -361,10 +356,7 @@ def ensure_path(path: Any) -> Any:
     path (Any): Anything. If string, it's converted to Path.
     RETURNS: Path or original argument.
     """
-    if isinstance(path, str):
-        return Path(path)
-    else:
-        return path
+    return Path(path) if isinstance(path, str) else path
 
 
 def load_language_data(path: Union[str, Path]) -> Union[dict, list]:
@@ -377,7 +369,7 @@ def load_language_data(path: Union[str, Path]) -> Union[dict, list]:
     path = ensure_path(path)
     if path.exists():
         return srsly.read_json(path)
-    path = path.with_suffix(path.suffix + ".gz")
+    path = path.with_suffix(f"{path.suffix}.gz")
     if path.exists():
         return srsly.read_gzip_json(path)
     raise ValueError(Errors.E160.format(path=path))
@@ -526,7 +518,7 @@ def load_model_from_config(
     # This will automatically handle all codes registered via the languages
     # registry, including custom subclasses provided via entry points
     lang_cls = get_lang_class(nlp_config["lang"])
-    nlp = lang_cls.from_config(
+    return lang_cls.from_config(
         config,
         vocab=vocab,
         disable=disable,
@@ -535,7 +527,6 @@ def load_model_from_config(
         validate=validate,
         meta=meta,
     )
-    return nlp
 
 
 def get_sourced_components(
@@ -642,16 +633,15 @@ def load_config(
     """
     config_path = ensure_path(path)
     config = Config(section_order=CONFIG_SECTION_ORDER)
-    if str(config_path) == "-":  # read from standard input
+    if str(config_path) == "-":
         return config.from_str(
             sys.stdin.read(), overrides=overrides, interpolate=interpolate
         )
-    else:
-        if not config_path or not config_path.is_file():
-            raise IOError(Errors.E053.format(path=config_path, name="config file"))
-        return config.from_disk(
-            config_path, overrides=overrides, interpolate=interpolate
-        )
+    if not config_path or not config_path.is_file():
+        raise IOError(Errors.E053.format(path=config_path, name="config file"))
+    return config.from_disk(
+        config_path, overrides=overrides, interpolate=interpolate
+    )
 
 
 def load_config_from_str(
@@ -726,7 +716,7 @@ def is_unconstrained_version(
     except InvalidSpecifier:
         return None
     spec.prereleases = prereleases
-    specs = [sp for sp in spec]
+    specs = list(spec)
     # We only have one version spec and it defines > or >=
     if len(specs) == 1 and specs[0].operator in (">", ">="):
         return True
@@ -824,7 +814,7 @@ def load_meta(path: Union[str, Path]) -> Dict[str, Any]:
             lower_version = get_model_lower_version(meta["spacy_version"])
             lower_version = get_minor_version(lower_version)  # type: ignore[arg-type]
             if lower_version is not None:
-                lower_version = "v" + lower_version
+                lower_version = f"v{lower_version}"
             elif "spacy_git_version" in meta:
                 lower_version = "git commit " + meta["spacy_git_version"]
             else:
@@ -1072,9 +1062,7 @@ def get_cuda_stream(
     require: bool = False, non_blocking: bool = True
 ) -> Optional[CudaStream]:
     ops = get_current_ops()
-    if CudaStream is None:
-        return None
-    elif isinstance(ops, NumpyOps):
+    if CudaStream is None or isinstance(ops, NumpyOps):
         return None
     else:
         return CudaStream(non_blocking=non_blocking)
@@ -1083,10 +1071,9 @@ def get_cuda_stream(
 def get_async(stream, numpy_array):
     if cupy is None:
         return numpy_array
-    else:
-        array = cupy.ndarray(numpy_array.shape, order="C", dtype=numpy_array.dtype)
-        array.set(numpy_array, stream=stream)
-        return array
+    array = cupy.ndarray(numpy_array.shape, order="C", dtype=numpy_array.dtype)
+    array.set(numpy_array, stream=stream)
+    return array
 
 
 def read_regex(path: Union[str, Path]) -> Pattern:
@@ -1094,8 +1081,9 @@ def read_regex(path: Union[str, Path]) -> Pattern:
     with path.open(encoding="utf8") as file_:
         entries = file_.read().split("\n")
     expression = "|".join(
-        ["^" + re.escape(piece) for piece in entries if piece.strip()]
+        [f"^{re.escape(piece)}" for piece in entries if piece.strip()]
     )
+
     return re.compile(expression)
 
 
@@ -1106,7 +1094,7 @@ def compile_prefix_regex(entries: Iterable[Union[str, Pattern]]) -> Pattern:
         spacy.lang.punctuation.TOKENIZER_PREFIXES.
     RETURNS (Pattern): The regex object. to be used for Tokenizer.prefix_search.
     """
-    expression = "|".join(["^" + piece for piece in entries if piece.strip()])  # type: ignore[operator, union-attr]
+    expression = "|".join([f"^{piece}" for piece in entries if piece.strip()])
     return re.compile(expression)
 
 
@@ -1117,7 +1105,7 @@ def compile_suffix_regex(entries: Iterable[Union[str, Pattern]]) -> Pattern:
         spacy.lang.punctuation.TOKENIZER_SUFFIXES.
     RETURNS (Pattern): The regex object. to be used for Tokenizer.suffix_search.
     """
-    expression = "|".join([piece + "$" for piece in entries if piece.strip()])  # type: ignore[operator, union-attr]
+    expression = "|".join([f"{piece}$" for piece in entries if piece.strip()])
     return re.compile(expression)
 
 
@@ -1171,7 +1159,7 @@ def update_exc(
             described_orth = "".join(attr[ORTH] for attr in token_attrs)
             if orth != described_orth:
                 raise ValueError(Errors.E056.format(key=orth, orths=described_orth))
-        exc.update(additions)
+        exc |= additions
     exc = expand_exc(exc, "'", "’")
     return exc
 
@@ -1205,7 +1193,7 @@ def expand_exc(
 def normalize_slice(
     length: int, start: int, stop: int, step: Optional[int] = None
 ) -> Tuple[int, int]:
-    if not (step is None or step == 1):
+    if step is not None and step != 1:
         raise ValueError(Errors.E057)
     if start is None:
         start = 0
@@ -1266,12 +1254,11 @@ def from_bytes(
 def to_dict(
     getters: Dict[str, Callable[[], Any]], exclude: Iterable[str]
 ) -> Dict[str, Any]:
-    serialized = {}
-    for key, getter in getters.items():
-        # Split to support file names like meta.json
-        if key.split(".")[0] not in exclude:
-            serialized[key] = getter()
-    return serialized
+    return {
+        key: getter()
+        for key, getter in getters.items()
+        if key.split(".")[0] not in exclude
+    }
 
 
 def from_dict(
@@ -1512,8 +1499,8 @@ def combine_score_weights(
     result: Dict[str, Optional[float]] = {
         key: value for w_dict in weights for (key, value) in w_dict.items()
     }
-    result.update(overrides)
-    weight_sum = sum([v if v else 0.0 for v in result.values()])
+    result |= overrides
+    weight_sum = sum(v or 0.0 for v in result.values())
     for key, value in result.items():
         if value and weight_sum > 0:
             result[key] = round(value / weight_sum, 2)
@@ -1551,15 +1538,12 @@ def minibatch(items, size):
     """Iterate over batches of items. `size` may be an iterator,
     so that batch-size can vary on each step.
     """
-    if isinstance(size, int):
-        size_ = itertools.repeat(size)
-    else:
-        size_ = size
+    size_ = itertools.repeat(size) if isinstance(size, int) else size
     items = iter(items)
     while True:
         batch_size = next(size_)
         batch = list(itertools.islice(items, int(batch_size)))
-        if len(batch) == 0:
+        if not batch:
             break
         yield list(batch)
 

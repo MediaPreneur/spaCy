@@ -67,7 +67,7 @@ def project_clone(
     if not (project_dir / PROJECT_FILE).exists():
         msg.warn(f"No {PROJECT_FILE} found in directory")
     else:
-        msg.good(f"Your project is now ready!")
+        msg.good("Your project is now ready!")
         print(f"To fetch the assets, run:\n{COMMAND} project assets {dest}")
 
 

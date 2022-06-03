@@ -93,10 +93,7 @@ def is_new_osx():
     mac_ver = platform.mac_ver()[0]
     if mac_ver.startswith("10"):
         minor_version = int(mac_ver.split(".")[1])
-        if minor_version >= 7:
-            return True
-        else:
-            return False
+        return minor_version >= 7
     return False
 
 
@@ -145,8 +142,7 @@ def write_git_info_py(filename="spacy/git_info.py"):
         env["LANGUAGE"] = "C"
         env["LANG"] = "C"
         env["LC_ALL"] = "C"
-        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env)
-        return out
+        return subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=env)
 
     git_version = "Unknown"
     if Path(".git").exists():

@@ -110,10 +110,7 @@ def _parse_overrides(args: List[str], is_cli: bool = False) -> Dict[str, Any]:
                 opt, value = opt.split("=", 1)
                 opt = opt.replace("-", "_")
             else:
-                if not args or args[0].startswith("--"):  # flag with no value
-                    value = "true"
-                else:
-                    value = args.pop(0)
+                value = "true" if not args or args[0].startswith("--") else args.pop(0)
             result[opt] = _parse_override(value)
         else:
             msg.fail(f"{err}: name should start with --", exits=1)
@@ -151,8 +148,7 @@ def load_project_config(
         config = srsly.read_yaml(config_path)
     except ValueError as e:
         msg.fail(invalid_err, e, exits=1)
-    errors = validate(ProjectConfigSchema, config)
-    if errors:
+    if errors := validate(ProjectConfigSchema, config):
         msg.fail(invalid_err)
         print("\n".join(errors))
         sys.exit(1)
@@ -204,7 +200,7 @@ def validate_project_version(config: Dict[str, Any]) -> None:
 
     config (Dict[str, Any]): The loaded config.
     """
-    spacy_version = config.get("spacy_version", None)
+    spacy_version = config.get("spacy_version")
     if spacy_version and not is_compatible_version(about.__version__, spacy_version):
         err = (
             f"The {PROJECT_FILE} specifies a spaCy version range ({spacy_version}) "
@@ -223,8 +219,9 @@ def validate_project_commands(config: Dict[str, Any]) -> None:
     """
     command_names = [cmd["name"] for cmd in config.get("commands", [])]
     workflows = config.get("workflows", {})
-    duplicates = set([cmd for cmd in command_names if command_names.count(cmd) > 1])
-    if duplicates:
+    if duplicates := {
+        cmd for cmd in command_names if command_names.count(cmd) > 1
+    }:
         err = f"Duplicate commands defined in {PROJECT_FILE}: {', '.join(duplicates)}"
         msg.fail(err, exits=1)
     for workflow_name, workflow_steps in workflows.items():
@@ -262,16 +259,15 @@ def get_checksum(path: Union[Path, str]) -> str:
     RETURNS (str): The checksum.
     """
     path = Path(path)
-    if not (path.is_file() or path.is_dir()):
+    if not path.is_file() and not path.is_dir():
         msg.fail(f"Can't get checksum for {path}: not a file or directory", exits=1)
     if path.is_file():
         return hashlib.md5(Path(path).read_bytes()).hexdigest()
-    else:
-        # TODO: this is currently pretty slow
-        dir_checksum = hashlib.md5()
-        for sub_file in sorted(fp for fp in path.rglob("*") if fp.is_file()):
-            dir_checksum.update(sub_file.read_bytes())
-        return dir_checksum.hexdigest()
+    # TODO: this is currently pretty slow
+    dir_checksum = hashlib.md5()
+    for sub_file in sorted(fp for fp in path.rglob("*") if fp.is_file()):
+        dir_checksum.update(sub_file.read_bytes())
+    return dir_checksum.hexdigest()
 
 
 @contextmanager
@@ -296,7 +292,7 @@ def show_validation_error(
     except ConfigValidationError as e:
         title = title if title is not None else e.title
         if e.desc:
-            desc = f"{e.desc}" if not desc else f"{e.desc}\n\n{desc}"
+            desc = f"{e.desc}\n\n{desc}" if desc else f"{e.desc}"
         # Re-generate a new error object with overrides
         err = e.from_error(e, title="", desc=desc, show_config=show_config)
         msg.fail(title)
@@ -487,8 +483,7 @@ def _http_to_git(repo: str) -> str:
         repo = repo.replace(r"http://", r"https://")
     if repo.startswith(r"https://"):
         repo = repo.replace("https://", "git@").replace("/", ":", 1)
-        if repo.endswith("/"):
-            repo = repo[:-1]
+        repo = repo.removesuffix("/")
         repo = f"{repo}.git"
     return repo
 

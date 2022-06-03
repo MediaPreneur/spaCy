@@ -55,22 +55,22 @@ URL_PATTERN = (
     # fmt: on
 ).strip()
 
-URL_MATCH = re.compile("(?u)" + URL_PATTERN).match
+URL_MATCH = re.compile(f"(?u){URL_PATTERN}").match
 
 
-BASE_EXCEPTIONS = {}
+BASE_EXCEPTIONS = {
+    exc_data[ORTH]: [exc_data]
+    for exc_data in [
+        {ORTH: " "},
+        {ORTH: "\t"},
+        {ORTH: "\\t"},
+        {ORTH: "\n"},
+        {ORTH: "\\n"},
+        {ORTH: "\u2014"},
+        {ORTH: "\u00a0", NORM: "  "},
+    ]
+}
 
-
-for exc_data in [
-    {ORTH: " "},
-    {ORTH: "\t"},
-    {ORTH: "\\t"},
-    {ORTH: "\n"},
-    {ORTH: "\\n"},
-    {ORTH: "\u2014"},
-    {ORTH: "\u00a0", NORM: "  "},
-]:
-    BASE_EXCEPTIONS[exc_data[ORTH]] = [exc_data]
 
 
 for orth in [

@@ -10,16 +10,15 @@ class IrishLemmatizer(Lemmatizer):
 
     @classmethod
     def get_lookups_config(cls, mode: str) -> Tuple[List[str], List[str]]:
-        if mode == "pos_lookup":
-            # fmt: off
-            required = [
-                "lemma_lookup_adj", "lemma_lookup_adp",
-                "lemma_lookup_noun", "lemma_lookup_verb"
-            ]
-            # fmt: on
-            return (required, [])
-        else:
+        if mode != "pos_lookup":
             return super().get_lookups_config(mode)
+        # fmt: off
+        required = [
+            "lemma_lookup_adj", "lemma_lookup_adp",
+            "lemma_lookup_noun", "lemma_lookup_verb"
+        ]
+        # fmt: on
+        return (required, [])
 
     def pos_lookup_lemmatize(self, token: Token) -> List[str]:
         univ_pos = token.pos_
@@ -85,11 +84,10 @@ def demutate(word: str, is_hpref: bool = False) -> str:
         word = word[1:]
     elif lc.startswith("dt"):
         word = word[1:]
-    elif word[0:1] == "n" and word[1:2] in UVOWELS:
+    elif word[:1] == "n" and word[1:2] in UVOWELS:
         word = word[1:]
     elif lc.startswith("n-") and word[2:3] in LVOWELS:
         word = word[2:]
-    # non-standard eclipsis
     elif lc.startswith("bh-f"):
         word = word[3:]
     elif lc.startswith("m-b"):
@@ -105,27 +103,21 @@ def demutate(word: str, is_hpref: bool = False) -> str:
     elif lc.startswith("d-t"):
         word = word[2:]
 
-    # t-prothesis
     elif lc.startswith("ts"):
         word = word[1:]
     elif lc.startswith("t-s"):
         word = word[2:]
 
-    # h-prothesis, if known to be present
-    elif is_hpref and word[0:1] == "h":
+    elif is_hpref and word[:1] == "h":
         word = word[1:]
-    # h-prothesis, simple case
-    # words can also begin with 'h', but unlike eclipsis,
-    # a hyphen is not used, so that needs to be handled
-    # elsewhere
-    elif word[0:1] == "h" and word[1:2] in UVOWELS:
+    elif word[:1] == "h" and word[1:2] in UVOWELS:
         word = word[1:]
 
     # lenition
     # this breaks the previous if, to handle super-non-standard
     # text where both eclipsis and lenition were used.
-    if lc[0:1] in "bcdfgmpst" and lc[1:2] == "h":
-        word = word[0:1] + word[2:]
+    if lc[:1] in "bcdfgmpst" and lc[1:2] == "h":
+        word = word[:1] + word[2:]
 
     return word
 

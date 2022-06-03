@@ -656,7 +656,7 @@ def test_matcher_ent_iob_key(en_vocab):
     matches2 = [doc2[start:end].text for _, start, end in matcher(doc2)]
     assert len(matches1) == 1
     assert matches1[0] == "York"
-    assert len(matches2) == 0
+    assert not matches2
 
     matcher = Matcher(en_vocab)  # Test iob pattern with operators
     matcher.add("Rule", [[{"ENT_IOB": "I", "OP": "+"}]])

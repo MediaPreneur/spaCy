@@ -37,7 +37,7 @@ def project_push(project_dir: Path, remote: str):
         remote = config["remotes"][remote]
     storage = RemoteStorage(project_dir, remote)
     for cmd in config.get("commands", []):
-        logger.debug(f"CMD: cmd['name']")
+        logger.debug("CMD: cmd['name']")
         deps = [project_dir / dep for dep in cmd.get("deps", [])]
         if any(not dep.exists() for dep in deps):
             logger.debug(f"Dependency missing. Skipping {cmd['name']} outputs")

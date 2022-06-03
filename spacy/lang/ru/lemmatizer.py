@@ -161,7 +161,7 @@ def oc2ud(oc_tag: str) -> Tuple[str, Dict[str, str]]:
         "Abbr": {"Abbr": "Yes"},
     }
     pos = "X"
-    morphology = dict()
+    morphology = {}
     unmatched = set()
     grams = oc_tag.replace(" ", ",").split(",")
     for gram in grams:
@@ -175,7 +175,7 @@ def oc2ud(oc_tag: str) -> Tuple[str, Dict[str, str]]:
                     morphology[categ] = gmap[gram]
         if not match:
             unmatched.add(gram)
-    while len(unmatched) > 0:
+    while unmatched:
         gram = unmatched.pop()
         if gram in ("Name", "Patr", "Surn", "Geox", "Orgn"):
             pos = "PROPN"

@@ -72,19 +72,18 @@ class RemoteStorage:
         url = self.find(path, command_hash=command_hash, content_hash=content_hash)
         if url is None:
             return url
-        else:
-            # Make sure the destination exists
-            if not dest.parent.exists():
-                dest.parent.mkdir(parents=True)
-            tmp: Path
-            with make_tempdir() as tmp:
-                tar_loc = tmp / url.parts[-1]
-                download_file(url, tar_loc)
-                mode_string = f"r:{self.compression}" if self.compression else "r"
-                with tarfile.open(tar_loc, mode=mode_string) as tar_file:
-                    # This requires that the path is added correctly, relative
-                    # to root. This is how we set things up in push()
-                    tar_file.extractall(self.root)
+        # Make sure the destination exists
+        if not dest.parent.exists():
+            dest.parent.mkdir(parents=True)
+        tmp: Path
+        with make_tempdir() as tmp:
+            tar_loc = tmp / url.parts[-1]
+            download_file(url, tar_loc)
+            mode_string = f"r:{self.compression}" if self.compression else "r"
+            with tarfile.open(tar_loc, mode=mode_string) as tar_file:
+                # This requires that the path is added correctly, relative
+                # to root. This is how we set things up in push()
+                tar_file.extractall(self.root)
         return url
 
     def find(
@@ -167,10 +166,9 @@ def get_env_hash(env: Dict[str, str]) -> str:
     Values in the env dict may be references to the current os.environ, using
     the syntax $ENV_VAR to mean os.environ[ENV_VAR]
     """
-    env_vars = {}
-    for key, value in env.items():
-        if value.startswith("$"):
-            env_vars[key] = os.environ.get(value[1:], "")
-        else:
-            env_vars[key] = value
+    env_vars = {
+        key: os.environ.get(value[1:], "") if value.startswith("$") else value
+        for key, value in env.items()
+    }
+
     return get_hash(env_vars)

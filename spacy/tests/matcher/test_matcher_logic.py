@@ -36,8 +36,7 @@ def text():
 
 @pytest.fixture
 def doc(en_tokenizer, text):
-    doc = en_tokenizer(" ".join(text))
-    return doc
+    return en_tokenizer(" ".join(text))
 
 
 @pytest.mark.issue(118)
@@ -57,7 +56,7 @@ def test_issue118(en_tokenizer, patterns):
     ORG = doc.vocab.strings["ORG"]
     matcher = Matcher(doc.vocab)
     matcher.add("BostonCeltics", patterns)
-    assert len(list(doc.ents)) == 0
+    assert not list(doc.ents)
     matches = [(ORG, start, end) for _, start, end in matcher(doc)]
     assert matches == [(ORG, 9, 11), (ORG, 10, 11)]
     doc.ents = matches[:1]
@@ -85,7 +84,7 @@ def test_issue118_prefix_reorder(en_tokenizer, patterns):
     ORG = doc.vocab.strings["ORG"]
     matcher = Matcher(doc.vocab)
     matcher.add("BostonCeltics", patterns)
-    assert len(list(doc.ents)) == 0
+    assert not list(doc.ents)
     matches = [(ORG, start, end) for _, start, end in matcher(doc)]
     doc.ents += tuple(matches)[1:]
     assert matches == [(ORG, 9, 10), (ORG, 9, 11)]
@@ -107,7 +106,7 @@ def test_issue242(en_tokenizer):
     doc = en_tokenizer(text)
     matcher = Matcher(doc.vocab)
     matcher.add("FOOD", patterns)
-    matches = [(ent_type, start, end) for ent_type, start, end in matcher(doc)]
+    matches = list(matcher(doc))
     match1, match2 = matches
     assert match1[1] == 3
     assert match1[2] == 5
@@ -284,7 +283,7 @@ def test_issue1971(en_vocab):
     # the real problem here is that it returns a duplicate match for a match_id
     # that's not actually in the vocab!
     matches = matcher(doc)
-    assert all([match_id in en_vocab.strings for match_id, start, end in matches])
+    assert all(match_id in en_vocab.strings for match_id, start, end in matches)
 
 
 @pytest.mark.issue(1971)

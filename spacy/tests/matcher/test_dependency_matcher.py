@@ -103,7 +103,7 @@ def dependency_matcher(en_vocab, patterns, doc):
         if i == 1:
             matcher.add("pattern1", [patterns[0]], on_match=mock)
         else:
-            matcher.add("pattern" + str(i), [patterns[i - 1]])
+            matcher.add(f"pattern{str(i)}", [patterns[i - 1]])
 
     return matcher
 
@@ -121,7 +121,7 @@ def test_dependency_matcher(dependency_matcher, doc, patterns):
     assert matches[4][1] == [4, 3]
     assert matches[5][1] == [4, 8]
 
-    span = doc[0:6]
+    span = doc[:6]
     matches = dependency_matcher(span)
     assert len(matches) == 5
     assert matches[0][1] == [3, 1, 2]
@@ -134,7 +134,7 @@ def test_dependency_matcher(dependency_matcher, doc, patterns):
 def test_dependency_matcher_pickle(en_vocab, patterns, doc):
     matcher = DependencyMatcher(en_vocab)
     for i in range(1, len(patterns) + 1):
-        matcher.add("pattern" + str(i), [patterns[i - 1]])
+        matcher.add(f"pattern{str(i)}", [patterns[i - 1]])
 
     matches = matcher(doc)
     assert matches[0][1] == [3, 1, 2]
@@ -321,7 +321,7 @@ def test_dependency_matcher_precedence_ops(en_vocab, op, num_matches):
 def test_dependency_matcher_ops(en_vocab, doc, left, right, op, num_matches):
     right_id = right
     if left == right:
-        right_id = right + "2"
+        right_id = f"{right}2"
     pattern = [
         {"RIGHT_ID": left, "RIGHT_ATTRS": {"LOWER": left}},
         {
