@@ -97,9 +97,8 @@ def like_num(text):
     # CHeck ordinal number
     if text_lower in _ordinal_words:
         return True
-    if text_lower.endswith("th"):
-        if text_lower[:-2].isdigit():
-            return True
+    if text_lower.endswith("th") and text_lower[:-2].isdigit():
+        return True
 
     return False
 

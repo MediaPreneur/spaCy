@@ -92,9 +92,8 @@ def like_num(text):
     # Check ordinal number
     if text_lower in _ordinal_words:
         return True
-    if text_lower.endswith("ኛ"):
-        if text_lower[:-2].isdigit():
-            return True
+    if text_lower.endswith("ኛ") and text_lower[:-2].isdigit():
+        return True
 
     return False
 

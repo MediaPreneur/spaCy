@@ -239,7 +239,7 @@ def verify_cli_args(
         input_locs = walk_directory(input_path, converter)
         if len(input_locs) == 0:
             msg.fail("No input files in directory", input_path, exits=1)
-        file_types = list(set([loc.suffix[1:] for loc in input_locs]))
+        file_types = list({loc.suffix[1:] for loc in input_locs})
         if converter == "auto" and len(file_types) >= 2:
             file_types_str = ",".join(file_types)
             msg.fail("All input files must be same type", file_types_str, exits=1)
@@ -252,7 +252,7 @@ def _get_converter(msg, converter, input_path: Path):
         input_path = walk_directory(input_path, converter)[0]
     if converter == "auto":
         converter = input_path.suffix[1:]
-    if converter == "ner" or converter == "iob":
+    if converter in ["ner", "iob"]:
         with input_path.open(encoding="utf8") as file_:
             input_data = file_.read()
         converter_autodetect = autodetect_ner_format(input_data)

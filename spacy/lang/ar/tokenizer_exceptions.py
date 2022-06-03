@@ -3,18 +3,18 @@ from ...symbols import ORTH, NORM
 from ...util import update_exc
 
 
-_exc = {}
+_exc = {
+    exc_data[ORTH]: [exc_data]
+    for exc_data in [
+        {NORM: "قبل الميلاد", ORTH: "ق.م"},
+        {NORM: "بعد الميلاد", ORTH: "ب. م"},
+        {NORM: "ميلادي", ORTH: ".م"},
+        {NORM: "هجري", ORTH: ".هـ"},
+        {NORM: "توفي", ORTH: ".ت"},
+    ]
+}
 
 
-# Time
-for exc_data in [
-    {NORM: "قبل الميلاد", ORTH: "ق.م"},
-    {NORM: "بعد الميلاد", ORTH: "ب. م"},
-    {NORM: "ميلادي", ORTH: ".م"},
-    {NORM: "هجري", ORTH: ".هـ"},
-    {NORM: "توفي", ORTH: ".ت"},
-]:
-    _exc[exc_data[ORTH]] = [exc_data]
 
 # Scientific abv.
 for exc_data in [

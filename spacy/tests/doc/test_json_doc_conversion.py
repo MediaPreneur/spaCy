@@ -99,9 +99,9 @@ def test_doc_to_json_span(doc):
 
 def test_json_to_doc(doc):
     new_doc = Doc(doc.vocab).from_json(doc.to_json(), validate=True)
-    new_tokens = [token for token in new_doc]
+    new_tokens = list(new_doc)
     assert new_doc.text == doc.text == "c d e "
-    assert len(new_tokens) == len([token for token in doc]) == 3
+    assert len(new_tokens) == len(list(doc)) == 3
     assert new_tokens[0].pos == doc[0].pos
     assert new_tokens[0].tag == doc[0].tag
     assert new_tokens[0].dep == doc[0].dep
@@ -123,7 +123,7 @@ def test_json_to_doc_underscore(doc):
     doc._.json_test2 = [1, 2, 3]
     json_doc = doc.to_json(underscore=["json_test1", "json_test2"])
     new_doc = Doc(doc.vocab).from_json(json_doc, validate=True)
-    assert all([new_doc.has_extension(f"json_test{i}") for i in range(1, 3)])
+    assert all(new_doc.has_extension(f"json_test{i}") for i in range(1, 3))
     assert new_doc._.json_test1 == "hello world"
     assert new_doc._.json_test2 == [1, 2, 3]
 

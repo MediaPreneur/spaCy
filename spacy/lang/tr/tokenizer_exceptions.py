@@ -4,9 +4,6 @@ from ..punctuation import ALPHA_LOWER, ALPHA
 from ...symbols import ORTH, NORM
 
 
-_exc = {}
-
-
 _abbr_period_exc = [
     {ORTH: "A.B.D.", NORM: "Amerika"},
     {ORTH: "Alb.", NORM: "albay"},
@@ -134,9 +131,7 @@ _abbr_period_exc = [
     {ORTH: "yy.", NORM: "yüzyıl"},
 ]
 
-for abbr in _abbr_period_exc:
-    _exc[abbr[ORTH]] = [abbr]
-
+_exc = {abbr[ORTH]: [abbr] for abbr in _abbr_period_exc}
 _abbr_exc = [
     {ORTH: "AB", NORM: "Avrupa Birliği"},
     {ORTH: "ABD", NORM: "Amerika"},

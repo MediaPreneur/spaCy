@@ -17,7 +17,7 @@ _infixes = (
     LIST_ELLIPSES
     + LIST_ICONS
     + [
-        r"(?<=[{}])\.(?=[{}])".format(ALPHA_LOWER, ALPHA_UPPER),
+        f"(?<=[{ALPHA_LOWER}])\\.(?=[{ALPHA_UPPER}])",
         r"(?<=[{a}])[,!?](?=[{a}])".format(a=ALPHA),
         r'(?<=[{a}"])[:<>=](?=[{a}])'.format(a=ALPHA),
         r"(?<=[{a}]),(?=[{a}])".format(a=ALPHA),
@@ -25,6 +25,7 @@ _infixes = (
         r"(?<=[{a}])--(?=[{a}])".format(a=ALPHA),
     ]
 )
+
 
 
 _list_units = [u for u in LIST_UNITS if u != "%"]

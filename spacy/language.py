@@ -105,8 +105,7 @@ def create_tokenizer() -> Callable[["Language"], Tokenizer]:
 @registry.misc("spacy.LookupsDataLoader.v1")
 def load_lookups_data(lang, tables):
     util.logger.debug(f"Loading lookups from spacy-lookups-data: {tables}")
-    lookups = load_lookups(lang=lang, tables=tables)
-    return lookups
+    return load_lookups(lang=lang, tables=tables)
 
 
 class Language:
@@ -174,9 +173,8 @@ class Language:
         if vocab is True:
             vectors_name = meta.get("vectors", {}).get("name")
             vocab = create_vocab(self.lang, self.Defaults, vectors_name=vectors_name)
-        else:
-            if (self.lang and vocab.lang) and (self.lang != vocab.lang):
-                raise ValueError(Errors.E150.format(nlp=self.lang, vocab=vocab.lang))
+        elif (self.lang and vocab.lang) and (self.lang != vocab.lang):
+            raise ValueError(Errors.E150.format(nlp=self.lang, vocab=vocab.lang))
         self.vocab: Vocab = vocab
         if self.lang is None:
             self.lang = self.vocab.lang
@@ -346,9 +344,11 @@ class Language:
 
         RETURNS (Dict[str, str]): Factory names, keyed by component names.
         """
-        factories = {}
-        for pipe_name, pipe in self._components:
-            factories[pipe_name] = self.get_pipe_meta(pipe_name).factory
+        factories = {
+            pipe_name: self.get_pipe_meta(pipe_name).factory
+            for pipe_name, pipe in self._components
+        }
+
         return SimpleFrozenDict(factories)
 
     @property
@@ -380,9 +380,7 @@ class Language:
         name (str): The factory name.
         RETURNS (str): The internal factory name.
         """
-        if cls.lang is None:
-            return name
-        return f"{cls.lang}.{name}"
+        return name if cls.lang is None else f"{cls.lang}.{name}"
 
     @classmethod
     def get_factory_meta(cls, name: str) -> "FactoryMeta":
@@ -425,8 +423,7 @@ class Language:
         """
         if name not in self._pipe_configs:
             raise ValueError(Errors.E960.format(name=name))
-        pipe_config = self._pipe_configs[name]
-        return pipe_config
+        return self._pipe_configs[name]
 
     @classmethod
     def factory(
@@ -825,7 +822,7 @@ class Language:
             raise ValueError(
                 Errors.E006.format(args=all_args, opts=self.component_names)
             )
-        if last or not any(value is not None for value in [first, before, after]):
+        if last or all(value is None for value in [first, before, after]):
             return len(self._components)
         elif first:
             return 0
@@ -841,8 +838,6 @@ class Language:
                     Errors.E001.format(name=after, opts=self.component_names)
                 )
             return self.component_names.index(after) + 1
-        # We're only accepting indices referring to components that exist
-        # (can't just do isinstance here because bools are instance of int, too)
         elif type(before) == int:
             if before >= len(self._components) or before < 0:
                 err = Errors.E959.format(
@@ -1153,7 +1148,7 @@ class Language:
         if component_cfg is None:
             component_cfg = {}
         pipe_kwargs = {}
-        for i, (name, proc) in enumerate(self.pipeline):
+        for name, proc in self.pipeline:
             component_cfg.setdefault(name, {})
             pipe_kwargs[name] = deepcopy(component_cfg[name])
             component_cfg[name].setdefault("drop", drop)
@@ -1162,14 +1157,13 @@ class Language:
             # ignore statements are used here because mypy ignores hasattr
             if name not in exclude and hasattr(proc, "update"):
                 proc.update(examples, sgd=None, losses=losses, **component_cfg[name])  # type: ignore
-            if sgd not in (None, False):
-                if (
-                    name not in exclude
-                    and isinstance(proc, ty.TrainableComponent)
-                    and proc.is_trainable
-                    and proc.model not in (True, False, None)
-                ):
-                    proc.finish_update(sgd)
+            if sgd not in (None, False) and (
+                name not in exclude
+                and isinstance(proc, ty.TrainableComponent)
+                and proc.is_trainable
+                and proc.model not in (True, False, None)
+            ):
+                proc.finish_update(sgd)
             if name in annotates:
                 for doc, eg in zip(
                     _pipe(
@@ -1315,8 +1309,7 @@ class Language:
                     proc.initialize, p_settings, section="components", name=name
                 )
                 proc.initialize(get_examples, nlp=self, **p_settings)
-        pretrain_cfg = config.get("pretraining")
-        if pretrain_cfg:
+        if pretrain_cfg := config.get("pretraining"):
             P = registry.resolve(pretrain_cfg, schema=ConfigSchemaPretrain)
             init_tok2vec(self, P, I)
         self._link_components()
@@ -1580,8 +1573,7 @@ class Language:
             docs = (self._ensure_doc(text) for text in texts)
             for pipe in pipes:
                 docs = pipe(docs)
-        for doc in docs:
-            yield doc
+        yield from docs
 
     def _has_gpu_model(self, disable: Iterable[str]):
         for name, proc in self.pipeline:
